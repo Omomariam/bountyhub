@@ -15,6 +15,7 @@ const short = (value: string) => `${value.slice(0, 6)}...${value.slice(-4)}`
 const accents = ['purple', 'yellow', 'cyan', 'pink'] as const
 
 function App() {
+  const [path, setPath] = useState(window.location.pathname)
   const [account, setAccount] = useState<`0x${string}` | null>(null)
   const [bounties, setBounties] = useState<Bounty[]>(demoBounties)
   const [activeNav, setActiveNav] = useState('Bounties')
@@ -27,6 +28,19 @@ function App() {
   const [mobileNav, setMobileNav] = useState(false)
 
   const publicClient = useMemo(() => createPublicClient({ chain: botChainTestnet, transport: http() }), [])
+
+  useEffect(() => {
+    const handlePopState = () => setPath(window.location.pathname)
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  function navigate(to: string) {
+    window.history.pushState({}, '', to)
+    setPath(window.location.pathname)
+    setMobileNav(false)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   useEffect(() => {
     if (!isContractConfigured) return
@@ -92,16 +106,19 @@ function App() {
   }
 
   function openFund(bounty: Bounty) { setSelected(bounty); setModal('fund') }
+  const isBountiesPage = path === '/bounties' || path.startsWith('/bounties/')
 
   return (
     <div className="app-shell">
       <div className="ambient ambient-one" /><div className="ambient ambient-two" />
       <header className="nav-wrap">
-        <a className="brand" href="#top" onClick={() => setActiveNav('Bounties')}>
+        <a className="brand" href="/" onClick={(e) => { e.preventDefault(); setActiveNav(''); navigate('/') }}>
           <span className="brand-mark"><span /></span><strong>Bounty<span>Hub</span></strong>
         </a>
         <nav className={mobileNav ? 'nav-links open' : 'nav-links'}>
-          {['Bounties', 'How it works', 'Leaderboard'].map((item) => <a key={item} href={`#${item.toLowerCase().replaceAll(' ', '-')}`} className={activeNav === item ? 'active' : ''} onClick={() => { setActiveNav(item); setMobileNav(false) }}>{item}</a>)}
+          <a href="/bounties" className={isBountiesPage ? 'active' : ''} onClick={(e) => { e.preventDefault(); setActiveNav('Bounties'); navigate('/bounties') }}>Bounties</a>
+          <a href="/#how-it-works" className={!isBountiesPage && activeNav === 'How it works' ? 'active' : ''} onClick={(e) => { e.preventDefault(); setActiveNav('How it works'); navigate('/'); setTimeout(() => document.getElementById('how-it-works')?.scrollIntoView(), 0) }}>How it works</a>
+          <a href="/#leaderboard" className={!isBountiesPage && activeNav === 'Leaderboard' ? 'active' : ''} onClick={(e) => { e.preventDefault(); setActiveNav('Leaderboard'); navigate('/'); setTimeout(() => document.getElementById('leaderboard')?.scrollIntoView(), 0) }}>Leaderboard</a>
         </nav>
         <div className="nav-actions">
           <span className="network-pill"><i /> BOT Testnet</span>
@@ -111,13 +128,35 @@ function App() {
       </header>
 
       <main id="top">
+        {isBountiesPage && <>
+        <section className="page-hero">
+          <span className="kicker">COMMUNITY-FUNDED DEVELOPMENT</span>
+          <h1>Explore bounties</h1>
+          <p>Fund promising ideas, review open work, and vote for the builders moving BOT Chain forward.</p>
+          <button className="primary-button" onClick={() => setModal('create')}><Plus size={18} /> Create a bounty</button>
+        </section>
+
+        <section className="board section" id="bounties">
+          <div className="section-heading"><div><span className="kicker">LIVE OPPORTUNITIES</span><h2>Fund the next big idea</h2></div><span className="result-count">{visible.length} bounties</span></div>
+          <div className="toolbar">
+            <div className="filters">{['All', 'Infrastructure', 'Developer tools', 'Community'].map((item) => <button className={filter === item ? 'selected' : ''} onClick={() => setFilter(item)} key={item}>{item}</button>)}</div>
+            <label className="search"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search bounties" /></label>
+          </div>
+          <div className="bounty-grid">
+            {visible.map((bounty) => <BountyCard bounty={bounty} key={bounty.id} onFund={() => openFund(bounty)} onOpen={() => { setSelected(bounty); setModal('details') }} />)}
+            {!visible.length && <div className="empty-state"><Search /><h3>No bounties found</h3><p>Try a different filter or search phrase.</p></div>}
+          </div>
+        </section>
+        </>}
+
+        {!isBountiesPage && <>
         <section className="hero">
           <div className="eyebrow"><Sparkles size={14} /> COMMUNITY-POWERED BUILDING</div>
           <h1>Communities fund<br /><em>what gets built.</em></h1>
           <p>Discover ideas, pool resources, and vote for the builders who bring the best work to life—fully onchain.</p>
           <div className="hero-actions">
             <button className="primary-button" onClick={() => setModal('create')}><Plus size={18} /> Create a bounty</button>
-            <a href="#bounties" className="ghost-button">Explore bounties <ArrowRight size={18} /></a>
+            <a href="/bounties" className="ghost-button" onClick={(e) => { e.preventDefault(); navigate('/bounties') }}>Explore bounties <ArrowRight size={18} /></a>
           </div>
           <div className="trust-row"><span><ShieldCheck size={16} /> Onchain escrow</span><span><Vote size={16} /> Community voted</span><span><Award size={16} /> Permissionless rewards</span></div>
         </section>
@@ -127,18 +166,6 @@ function App() {
           <Stat icon={<Code2 />} label="Active builders" value={String(stats.builders)} />
           <Stat icon={<Vote />} label="Votes cast" value={stats.votes.toLocaleString()} />
           <Stat icon={<Trophy />} label="Bounties shipped" value="36" />
-        </section>
-
-        <section className="board section" id="bounties">
-          <div className="section-heading"><div><span className="kicker">LIVE OPPORTUNITIES</span><h2>Fund the next big idea</h2></div><a href="#bounties">View all <ArrowRight size={16} /></a></div>
-          <div className="toolbar">
-            <div className="filters">{['All', 'Infrastructure', 'Developer tools', 'Community'].map((item) => <button className={filter === item ? 'selected' : ''} onClick={() => setFilter(item)} key={item}>{item}</button>)}</div>
-            <label className="search"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search bounties" /></label>
-          </div>
-          <div className="bounty-grid">
-            {visible.map((bounty) => <BountyCard bounty={bounty} key={bounty.id} onFund={() => openFund(bounty)} onOpen={() => { setSelected(bounty); setModal('details') }} />)}
-            {!visible.length && <div className="empty-state"><Search /><h3>No bounties found</h3><p>Try a different filter or search phrase.</p></div>}
-          </div>
         </section>
 
         <section className="how section" id="how-it-works">
@@ -160,9 +187,10 @@ function App() {
         </section>
 
         <section className="cta section"><div><span className="kicker">YOUR IDEA COULD BE NEXT</span><h2>Ready to build together?</h2><p>Create a bounty or fund a builder. Every contribution moves the ecosystem forward.</p></div><button className="yellow-button" onClick={() => setModal('create')}>Launch a bounty <ArrowRight size={18} /></button></section>
+        </>}
       </main>
 
-      <footer><a className="brand" href="#top"><span className="brand-mark"><span /></span><strong>Bounty<span>Hub</span></strong></a><p>Community-funded development on BOT Chain.</p><div><a href="https://scan.bohr.life" target="_blank">Explorer <ExternalLink size={13} /></a><a href="https://github.com/BOTChain-bot" target="_blank"><Code2 size={15} /> GitHub</a></div></footer>
+      <footer><a className="brand" href="/" onClick={(e) => { e.preventDefault(); navigate('/') }}><span className="brand-mark"><span /></span><strong>Bounty<span>Hub</span></strong></a><p>Community-funded development on BOT Chain.</p><div><a href="https://scan.bohr.life" target="_blank">Explorer <ExternalLink size={13} /></a><a href="https://github.com/BOTChain-bot" target="_blank"><Code2 size={15} /> GitHub</a></div></footer>
 
       {notice && <div className="toast"><Check size={17} /><span>{notice}</span><button onClick={() => setNotice(null)}><X size={16} /></button></div>}
       {modal === 'create' && <CreateModal onClose={() => setModal(null)} busy={busy} onSubmit={async (data) => {
