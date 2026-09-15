@@ -12,6 +12,8 @@ npm run dev
 
 The polished preview works without a deployed contract by showing demo data. Wallet transactions become available after `VITE_BOUNTYHUB_ADDRESS` is set to a deployed address.
 
+Current BOT Chain Testnet deployment: [`0x6d06bafdd04e68648b85ce15635f30e83405e831`](https://scan.bohr.life/address/0x6d06bafdd04e68648b85ce15635f30e83405e831).
+
 ## Smart contract lifecycle
 
 1. `createBounty` opens funding and voting and can include seed BOT.

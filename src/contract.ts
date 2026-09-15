@@ -10,7 +10,7 @@ export const botChainTestnet = defineChain({
 })
 
 export const contractAddress = (import.meta.env.VITE_BOUNTYHUB_ADDRESS ||
-  '0x0000000000000000000000000000000000000000') as `0x${string}`
+  '0x6d06bafdd04e68648b85ce15635f30e83405e831') as `0x${string}`
 
 export const isContractConfigured = !/^0x0{40}$/i.test(contractAddress)
 
