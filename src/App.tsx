@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react'
 import {
   ArrowRight, Award, Check, ChevronDown, CircleDollarSign, Clock3, Code2,
   ExternalLink, Menu, Plus, Search, ShieldCheck, Sparkles,
-  Trophy, Users, Vote, Wallet, X,
+  Trophy, Users, Vote, Wallet, X, LogOut,
 } from 'lucide-react'
 import { createPublicClient, createWalletClient, custom, formatEther, http, parseEther } from 'viem'
 import { botChainTestnet, bountyHubAbi, contractAddress, isContractConfigured } from './contract'
@@ -65,6 +65,11 @@ function App() {
     } catch { setNotice('Wallet connection was cancelled.'); return null }
   }
 
+  function disconnectWallet() {
+    setAccount(null)
+    setNotice('Wallet disconnected from BountyHub.')
+  }
+
   async function write(functionName: 'createBounty' | 'fundBounty' | 'submitWork' | 'vote' | 'selectWinner' | 'claimReward', args: readonly unknown[], value?: bigint) {
     const activeAccount = account || await connectWallet()
     if (!activeAccount) throw new Error('Connect a wallet to continue.')
@@ -100,7 +105,7 @@ function App() {
         </nav>
         <div className="nav-actions">
           <span className="network-pill"><i /> BOT Testnet</span>
-          <button className="wallet-button" onClick={connectWallet}><Wallet size={17} /> {account ? short(account) : 'Connect wallet'}</button>
+          {account ? <div className="connected-wallet"><span><i />{short(account)}</span><button className="disconnect-button" onClick={disconnectWallet} aria-label="Disconnect wallet" title="Disconnect wallet"><LogOut size={16} /><b>Disconnect</b></button></div> : <button className="wallet-button" onClick={connectWallet}><Wallet size={17} /> Connect wallet</button>}
           <button className="menu-button" aria-label="Toggle menu" onClick={() => setMobileNav(!mobileNav)}>{mobileNav ? <X /> : <Menu />}</button>
         </div>
       </header>
