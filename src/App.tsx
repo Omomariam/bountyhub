@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { createPublicClient, createWalletClient, custom, formatEther, http, parseEther } from 'viem'
 import { botChainTestnet, bountyHubAbi, contractAddress, isContractConfigured } from './contract'
-import { Bounty, demoBounties, leaders } from './data'
+import { Bounty, leaders } from './data'
 
 type EthereumProvider = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }
 declare global { interface Window { ethereum?: EthereumProvider } }
@@ -17,7 +17,9 @@ const accents = ['purple', 'yellow', 'cyan', 'pink'] as const
 function App() {
   const [path, setPath] = useState(window.location.pathname)
   const [account, setAccount] = useState<`0x${string}` | null>(null)
-  const [bounties, setBounties] = useState<Bounty[]>(demoBounties)
+  const [bounties, setBounties] = useState<Bounty[]>([])
+  const [loadingBounties, setLoadingBounties] = useState(isContractConfigured)
+  const [bountiesError, setBountiesError] = useState<string | null>(null)
   const [activeNav, setActiveNav] = useState('Bounties')
   const [filter, setFilter] = useState('All')
   const [query, setQuery] = useState('')
@@ -57,8 +59,9 @@ function App() {
             submissions: Number(item[7]), votes: Number(item[8]), accent: accents[index % accents.length],
           } satisfies Bounty
         }))
-        if (items.length) setBounties(items)
-      } catch { setNotice('Could not read the deployed contract. Showing preview data.') }
+        setBounties(items)
+      } catch { setBountiesError('Could not load bounties. Please refresh to try again.') }
+      finally { setLoadingBounties(false) }
     })()
   }, [publicClient])
 
@@ -137,14 +140,16 @@ function App() {
         </section>
 
         <section className="board section" id="bounties">
-          <div className="section-heading"><div><span className="kicker">LIVE OPPORTUNITIES</span><h2>Fund the next big idea</h2></div><span className="result-count">{visible.length} bounties</span></div>
+          <div className="section-heading"><div><span className="kicker">LIVE OPPORTUNITIES</span><h2>Fund the next big idea</h2></div><span className="result-count">{loadingBounties ? 'Loading...' : `${visible.length} bounties`}</span></div>
           <div className="toolbar">
             <div className="filters">{['All', 'Infrastructure', 'Developer tools', 'Community'].map((item) => <button className={filter === item ? 'selected' : ''} onClick={() => setFilter(item)} key={item}>{item}</button>)}</div>
             <label className="search"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search bounties" /></label>
           </div>
           <div className="bounty-grid">
             {visible.map((bounty) => <BountyCard bounty={bounty} key={bounty.id} onFund={() => openFund(bounty)} onOpen={() => { setSelected(bounty); setModal('details') }} />)}
-            {!visible.length && <div className="empty-state"><Search /><h3>No bounties found</h3><p>Try a different filter or search phrase.</p></div>}
+            {loadingBounties ? <div className="empty-state" role="status"><Clock3 /><h3>Loading bounties...</h3><p>Fetching created bounties.</p></div>
+              : bountiesError ? <div className="empty-state" role="alert"><h3>Bounties unavailable</h3><p>{bountiesError}</p></div>
+              : !visible.length && <div className="empty-state"><Search /><h3>No bounties found</h3><p>{bounties.length ? 'Try a different filter or search phrase.' : 'Created bounties will appear here.'}</p></div>}
           </div>
         </section>
         </>}
