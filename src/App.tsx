@@ -195,7 +195,15 @@ function App() {
         </>}
       </main>
 
-      <footer><a className="brand" href="/" onClick={(e) => { e.preventDefault(); navigate('/') }}><span className="brand-mark"><span /></span><strong>Bounty<span>Hub</span></strong></a><p>Community-funded development on BOT Chain.</p><div><a href="https://scan.bohr.life" target="_blank">Explorer <ExternalLink size={13} /></a><a href="https://github.com/BOTChain-bot" target="_blank"><Code2 size={15} /> GitHub</a></div></footer>
+      <footer>
+        <a className="brand" href="/" onClick={(e) => { e.preventDefault(); navigate('/') }}><span className="brand-mark"><span /></span><strong>Bounty<span>Hub</span></strong></a>
+        <p>Community-funded development on BOT Chain.</p>
+        <div>
+          <a href="https://botchain.ai" target="_blank" rel="noopener noreferrer">BOT Chain <ExternalLink size={13} aria-hidden="true" /></a>
+          <a href="https://scan.botchain.ai" target="_blank" rel="noopener noreferrer">BOT Chain Explorer <ExternalLink size={13} aria-hidden="true" /></a>
+          <a href="https://github.com/BOTChain-bot" target="_blank" rel="noopener noreferrer"><Code2 size={15} aria-hidden="true" /> GitHub</a>
+        </div>
+      </footer>
 
       {notice && <div className="toast"><Check size={17} /><span>{notice}</span><button onClick={() => setNotice(null)}><X size={16} /></button></div>}
       {modal === 'create' && <CreateModal onClose={() => setModal(null)} busy={busy} onSubmit={async (data) => {
